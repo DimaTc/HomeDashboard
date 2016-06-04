@@ -22,9 +22,18 @@ default_error_page = """\
 """
 
 default_header_status = "HTTP/1.1 %(code)d %(status)s\r\n"
-default_header_content_type = "Content-Type: text/html; charset=utf-8\r\n"
+default_header_content_type = "Content-Type: text/html; charset=utf-8\r\n\r\n"
 buffer_size = 1024
 
+
+def get_page(code):
+    page = default_error_page
+    if code == 200:
+        pass
+    else:
+        file = open(os.path.dirname(__file__) + "/www/not-found.html", 'r')
+        page = file.read()
+    return page
 
 class BaseServer:
 
@@ -56,9 +65,10 @@ class BaseServer:
         print(str(address[0]) + " Connected! (port " + str(address[1]) + ")")
         result = self.parse_request(connection.recv(buffer_size))
         if result == 0:
-            connection.sendall(bytes(self.parse_response(200)))
+            page = self.parse_response(200)
         else:
-            connection.sendall(bytes(self.parse_response(404)))
+            page = self.parse_response(404)
+        connection.sendall(bytes(page))
 
     def parse_request(self, data):
         if len(data) == 0:
@@ -85,8 +95,9 @@ class BaseServer:
 
         base_header = (default_header_status % {'code': code, 'status': status})
         base_content_type = default_header_content_type
-        error_page = (default_error_page % {'code': code, 'status': status})
-        return_string = str(base_header + base_content_type + error_page).encode('utf-8')
+        # page = (default_error_page % {'code': code, 'status': status})
+        page = str(get_page(code))
+        return_string = str(base_header + base_content_type + page).encode('utf-8')
         print(return_string)
         return return_string
 
